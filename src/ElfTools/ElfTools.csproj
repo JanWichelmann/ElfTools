@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <PackageId>ElfTools</PackageId>
+        <Version>0.1.0</Version>
+        <Authors>Jan Wichelmann</Authors>
+        <PackageProjectUrl>https://github.com/JanWichelmann/ElfTools</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/JanWichelmann/ElfTools</RepositoryUrl>
+        <Description>A pure C# library for reading and modifying ELF64 files.
+
+            This library is experimental, unstable and likely to break. Use at your own risk.</Description>
+        <PackageTags>ELF Instrumentation</PackageTags>
+        <PackageLicenseFile>LICENSE</PackageLicenseFile>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../../LICENSE" Pack="true" PackagePath="/" />
+        <None Include="../../README.md" Pack="true" PackagePath="/" />
+    </ItemGroup>
+</Project>

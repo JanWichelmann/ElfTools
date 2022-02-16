@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ElfTools", "src\ElfTools\ElfTools.csproj", "{9559070E-8904-4C1B-9EAE-AFD921098475}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AddExecutableSection", "examples\AddExecutableSection\AddExecutableSection.csproj", "{18973EA0-F09E-4EF2-96CA-88962116FA5B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9559070E-8904-4C1B-9EAE-AFD921098475}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9559070E-8904-4C1B-9EAE-AFD921098475}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9559070E-8904-4C1B-9EAE-AFD921098475}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9559070E-8904-4C1B-9EAE-AFD921098475}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18973EA0-F09E-4EF2-96CA-88962116FA5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18973EA0-F09E-4EF2-96CA-88962116FA5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18973EA0-F09E-4EF2-96CA-88962116FA5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18973EA0-F09E-4EF2-96CA-88962116FA5B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
