@@ -791,6 +791,53 @@ namespace ElfTools.Instrumentation
         }
 
         /// <summary>
+        /// Extends the given section by the given bytes.
+        /// </summary>
+        /// <param name="sectionIndex">Section index.</param>
+        /// <param name="bytes">Bytes to add at the end.</param>
+        /// <remarks>The section can only grow if there is sufficient dummy chunk space behind it.</remarks>
+        public void ExtendRawSection(int sectionIndex, byte[] bytes)
+        {
+            _imageRenderer?.Invoke(Chunks, $"chunks{(_imageIndex++):D3}.png");
+
+            // Ensure that there are no consecutive dummy chunks (this way we always only need to deal with a single chunk)
+            CleanUpDummyChunks();
+
+            var sectionHeaderTableBuilder = SectionHeaderTable.SectionHeaders.ToBuilder();
+            var oldSectionHeader = sectionHeaderTableBuilder[sectionIndex];
+            var sectionChunkIndex = GetChunkIndexForOffset(oldSectionHeader.FileOffset);
+
+            if(sectionChunkIndex == null || Chunks[sectionChunkIndex.Value.chunkIndex] is not RawSectionChunk sectionChunk)
+                throw new Exception("Could not resolve section index to section chunk.");
+
+            // Check whether there is enough space
+            int dummyChunkIndex = sectionChunkIndex.Value.chunkIndex + 1;
+            if(dummyChunkIndex >= Chunks.Count || Chunks[dummyChunkIndex] is not DummyChunk dummyChunk || dummyChunk.ByteLength < bytes.Length)
+                throw new Exception("Could not find sufficient dummy chunk space behind the existing section.");
+
+            // Shrink dummy chunk
+            var reducedDummyChunk = dummyChunk with { Data = dummyChunk.Data.Take(dummyChunk.ByteLength - bytes.Length).ToImmutableArray() };
+
+            // Extend section
+            var extendedSectionChunk = sectionChunk with { Data = sectionChunk.Data.Concat(bytes).ToImmutableArray() };
+
+            // Save modified chunks
+            Chunks[sectionChunkIndex.Value.chunkIndex] = extendedSectionChunk;
+            Chunks[dummyChunkIndex] = reducedDummyChunk;
+
+            // Update section header table
+            sectionHeaderTableBuilder[sectionIndex] = oldSectionHeader with
+            {
+                Size = (ulong)((int)oldSectionHeader.Size + bytes.Length)
+            };
+            var newSectionHeaderTableChunk = SectionHeaderTable with { SectionHeaders = sectionHeaderTableBuilder.ToImmutable() };
+            SectionHeaderTable = newSectionHeaderTableChunk;
+            Chunks[Chunks.FindIndex(c => c is SectionHeaderTableChunk)] = newSectionHeaderTableChunk;
+
+            _imageRenderer?.Invoke(Chunks, $"chunks{(_imageIndex++):D3}.png");
+        }
+
+        /// <summary>
         /// Creates a new section based on the given new section header table entry.
         /// </summary>
         /// <param name="newSectionHeaderTableEntry">The entry to add to the section header table.</param>
@@ -943,12 +990,56 @@ namespace ElfTools.Instrumentation
         }
 
         /// <summary>
+        /// Reads bytes from the given file offset.
+        /// The accessed bytes must reside in a raw section chunk.
+        /// </summary>
+        /// <param name="offset">Offset where the bytes should be read.</param>
+        /// <param name="bytes">Buffer for the read bytes.</param>
+        public void GetRawBytesAtOffset(int offset, Span<byte> bytes)
+        {
+            // Resolve chunk
+            (int chunkIndex, ulong chunkBaseOffset) = GetChunkIndexForOffset((ulong)offset)
+                                                      ?? throw new Exception("Could not locate chunk belonging to the given offset.");
+            if(Chunks[chunkIndex] is not RawSectionChunk rawSectionChunk)
+                throw new InvalidOperationException("This method can only read raw section chunks.");
+
+            // Patch chunk data
+            int relativeChunkOffset = offset - (int)chunkBaseOffset;
+            for(int i = 0; i < bytes.Length; ++i)
+                bytes[i] = rawSectionChunk.Data[relativeChunkOffset + i];
+        }
+
+        /// <summary>
+        /// Replaces a number of bytes at the given file offset.
+        /// The replaced bytes must reside in a raw section chunk.
+        /// </summary>
+        /// <param name="offset">Offset where the bytes should be replaced.</param>
+        /// <param name="newBytes">New bytes.</param>
+        public void PatchRawBytesAtOffset(int offset, ReadOnlySpan<byte> newBytes)
+        {
+            // Resolve chunk
+            (int chunkIndex, ulong chunkBaseOffset) = GetChunkIndexForOffset((ulong)offset)
+                                                      ?? throw new Exception("Could not locate chunk belonging to the given offset.");
+            if(Chunks[chunkIndex] is not RawSectionChunk rawSectionChunk)
+                throw new InvalidOperationException("This method can only patch raw section chunks.");
+
+            // Patch chunk data
+            int relativeChunkOffset = offset - (int)chunkBaseOffset;
+            var chunkDataBuilder = rawSectionChunk.Data.ToBuilder();
+            for(int i = 0; i < newBytes.Length; ++i)
+                chunkDataBuilder[relativeChunkOffset + i] = newBytes[i];
+
+            // Store updated chunk
+            Chunks[chunkIndex] = new RawSectionChunk { Data = chunkDataBuilder.ToImmutable() };
+        }
+
+        /// <summary>
         /// Replaces a number of bytes at the given virtual address, as determined by the program header table.
         /// The replaced bytes must reside in a raw section chunk.
         /// </summary>
         /// <param name="address">Virtual address where the bytes should be replaced.</param>
         /// <param name="newBytes">New bytes.</param>
-        public void PatchRawBytesInSegment(int address, ReadOnlySpan<byte> newBytes)
+        public void PatchRawBytesAtAddress(int address, ReadOnlySpan<byte> newBytes)
         {
             // Resolve segment
             int endAddress = address + newBytes.Length;
