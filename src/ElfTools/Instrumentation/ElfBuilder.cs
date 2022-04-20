@@ -989,6 +989,29 @@ namespace ElfTools.Instrumentation
             _imageRenderer?.Invoke(Chunks, $"chunks{(_imageIndex++):D3}.png");
         }
 
+        public void PatchValueInRelocationTable(ulong offset, long oldValue, long newValue)
+        {
+            // Find relocation table
+            for(int i = 0; i < Chunks.Count; ++i)
+            {
+                if(Chunks[i] is not RelocationAddendTableChunk relocationTableChunk)
+                    continue;
+
+                var tableBuilder = relocationTableChunk.Entries.ToBuilder();
+                for(int j = 0; j < tableBuilder.Count; ++j)
+                {
+                    var tableEntry = tableBuilder[j];
+                    if(tableEntry.Offset == offset && tableEntry.Addend==oldValue)
+                    {
+                        tableBuilder[j] = tableEntry with { Addend = newValue };
+                    }
+                }
+
+                Chunks[i] = relocationTableChunk with { Entries = tableBuilder.ToImmutable() };
+            }
+            
+        }
+        
         /// <summary>
         /// Reads bytes from the given file offset.
         /// The accessed bytes must reside in a raw section chunk.
