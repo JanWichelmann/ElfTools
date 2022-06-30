@@ -6,18 +6,18 @@ using ElfTools.Utilities;
 
 namespace ElfTools.Chunks
 {
-    public record ProgramHeaderTableChunk : Chunk
+    public class ProgramHeaderTableChunk : Chunk
     {
         /// <summary>
         /// List of program headers.
         /// </summary>
-        public ImmutableList<ProgramHeaderTableEntry> ProgramHeaders { get; init; } = ImmutableList<ProgramHeaderTableEntry>.Empty;
+        public List<ProgramHeaderTableEntry> ProgramHeaders { get; set; }
 
         /// <summary>
         /// Size of a single program header. This must match the <see cref="HeaderChunk.ProgramHeaderTableEntrySize" /> value.
         /// Program headers are padded to achieve the given size.
         /// </summary>
-        public int EntrySize { get; init; }
+        public int EntrySize { get; set; }
 
         public override int ByteLength => ProgramHeaders.Count * EntrySize;
 
@@ -79,12 +79,12 @@ namespace ElfTools.Chunks
 
             return new ProgramHeaderTableChunk
             {
-                ProgramHeaders = list.ToImmutableList(),
+                ProgramHeaders = list,
                 EntrySize = entrySize
             };
         }
 
-        public record ProgramHeaderTableEntry
+        public class ProgramHeaderTableEntry
         {
             /// <summary>
             /// Byte length of a program header.
@@ -95,49 +95,49 @@ namespace ElfTools.Chunks
             /// Segment type.
             /// </summary>
             /// <remarks>(p_type)</remarks>
-            public SegmentType Type { get; init; }
+            public SegmentType Type { get; set; }
 
             /// <summary>
             /// Flags.
             /// </summary>
             /// <remarks>(p_flags)</remarks>
-            public SegmentFlags Flags { get; init; }
+            public SegmentFlags Flags { get; set; }
 
             /// <summary>
             /// File offset of segment data.
             /// </summary>
             /// <remarks>(p_offset)</remarks>
-            public ulong FileOffset { get; init; }
+            public ulong FileOffset { get; set; }
 
             /// <summary>
             /// Virtual memory address of segment data.
             /// </summary>
             /// <remarks>(p_vaddr)</remarks>
-            public ulong VirtualMemoryAddress { get; init; }
+            public ulong VirtualMemoryAddress { get; set; }
 
             /// <summary>
             /// Physical memory address of segment data.
             /// </summary>
             /// <remarks>(p_paddr)</remarks>
-            public ulong PhysicalMemoryAddress { get; init; }
+            public ulong PhysicalMemoryAddress { get; set; }
 
             /// <summary>
             /// File size of segment data.
             /// </summary>
             /// <remarks>(p_filesz)</remarks>
-            public ulong FileSize { get; init; }
+            public ulong FileSize { get; set; }
 
             /// <summary>
             /// Memory size of segment data.
             /// </summary>
             /// <remarks>(p_memsz)</remarks>
-            public ulong MemorySize { get; init; }
+            public ulong MemorySize { get; set; }
 
             /// <summary>
             /// Alignment.
             /// </summary>
             /// <remarks>(p_align)</remarks>
-            public ulong Alignment { get; init; }
+            public ulong Alignment { get; set; }
         }
     }
 }

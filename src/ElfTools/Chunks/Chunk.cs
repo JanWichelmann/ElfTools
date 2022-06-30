@@ -6,7 +6,7 @@ namespace ElfTools.Chunks
     /// <summary>
     /// Represents a generic chunk.
     /// </summary>
-    public abstract record Chunk
+    public abstract class Chunk
     {
         /// <summary>
         /// Returns the length of the chunk's byte representation.
@@ -42,7 +42,7 @@ namespace ElfTools.Chunks
         {
             return new DummyChunk
             {
-                Data = Bytes.ToImmutableArray()
+                Data = Bytes
             };
         }
     }

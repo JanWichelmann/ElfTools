@@ -9,23 +9,23 @@ namespace ElfTools.Chunks
     /// <summary>
     /// Contains a symbol table.
     /// </summary>
-    public record SymbolTableChunk : SectionChunk
+    public class SymbolTableChunk : SectionChunk
     {
         /// <summary>
         /// List of table entries.
         /// </summary>
-        public ImmutableList<SymbolTableEntry> Entries { get; init; } = ImmutableList<SymbolTableEntry>.Empty;
+        public List<SymbolTableEntry> Entries { get; set; }
 
         /// <summary>
         /// Size of an entry. This must match <see cref="SectionHeaderTableChunk.SectionHeaderTableEntry.EntrySize" />.
         /// Entries are padded to achieve the given size.
         /// </summary>
-        public int EntrySize { get; init; }
+        public int EntrySize { get; set; }
 
         /// <summary>
         /// Number of trailing bytes after the table entries.
         /// </summary>
-        public int TrailingByteCount { get; init; }
+        public int TrailingByteCount { get; set; }
 
         public override int ByteLength => Entries.Count * EntrySize + TrailingByteCount;
 
@@ -86,13 +86,13 @@ namespace ElfTools.Chunks
 
             return new SymbolTableChunk
             {
-                Entries = list.ToImmutableList(),
+                Entries = list,
                 EntrySize = entrySize,
                 TrailingByteCount = buffer.Length - offset
             };
         }
 
-        public record SymbolTableEntry
+        public class SymbolTableEntry
         {
             /// <summary>
             /// Byte length of an entry.
@@ -103,37 +103,37 @@ namespace ElfTools.Chunks
             /// String table index of the symbol name.
             /// </summary>
             /// <remarks>(st_name)</remarks>
-            public uint Name { get; init; }
+            public uint Name { get; set; }
 
             /// <summary>
             /// Symbol type and binding.
             /// </summary>
             /// <remarks>(st_info)</remarks>
-            public SymbolInfo Info { get; init; }
+            public SymbolInfo Info { get; set; }
 
             /// <summary>
             /// Symbol visibility.
             /// </summary>
             /// <remarks>(st_other)</remarks>
-            public SymbolVisibility Visibility { get; init; }
+            public SymbolVisibility Visibility { get; set; }
 
             /// <summary>
             /// Section index.
             /// </summary>
             /// <remarks>(st_shndx)</remarks>
-            public ushort Section { get; init; }
+            public ushort Section { get; set; }
 
             /// <summary>
             /// Symbol value.
             /// </summary>
             /// <remarks>(st_value)</remarks>
-            public ulong Value { get; init; }
+            public ulong Value { get; set; }
 
             /// <summary>
             /// Symbol size.
             /// </summary>
             /// <remarks>(st_size)</remarks>
-            public ulong Size { get; init; }
+            public ulong Size { get; set; }
         }
     }
 }

@@ -8,12 +8,12 @@ namespace ElfTools.Chunks
     /// A dummy chunk for storing data which does not belong to headers or section.
     /// Used for alignment bytes between sections.
     /// </summary>
-    public record DummyChunk : Chunk
+    public class DummyChunk : Chunk
     {
         /// <summary>
         /// Bytes stored in this dummy chunk.
         /// </summary>
-        public ImmutableArray<byte> Data { get; init; } = ImmutableArray<byte>.Empty;
+        public byte[] Data { get; set; }
 
 
         public override byte[] Bytes => Data.ToArray();
@@ -36,13 +36,12 @@ namespace ElfTools.Chunks
         public static DummyChunk FromBytes(ReadOnlySpan<byte> buffer)
         {
             // Copy data
-            var builder = ImmutableArray.CreateBuilder<byte>(buffer.Length);
-            foreach(var b in buffer)
-                builder.Add(b);
+            byte[] data = new byte[buffer.Length];
+            buffer.CopyTo(data);
 
             return new DummyChunk
             {
-                Data = builder.MoveToImmutable()
+                Data = data
             };
         }
     }

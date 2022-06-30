@@ -4,12 +4,12 @@ using System.Text;
 
 namespace ElfTools.Chunks
 {
-    public record StringTableChunk : SectionChunk
+    public class StringTableChunk : SectionChunk
     {
         /// <summary>
         /// Raw string table data.
         /// </summary>
-        public ImmutableArray<char> Data { get; init; } = ImmutableArray<char>.Empty;
+        public char[] Data { get; set; }
 
         public override int ByteLength => Data.Length;
 
@@ -46,7 +46,7 @@ namespace ElfTools.Chunks
 
             return new StringTableChunk
             {
-                Data = data.ToImmutableArray()
+                Data = data
             };
         }
     }

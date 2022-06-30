@@ -209,7 +209,7 @@ namespace ElfTools
             // Create ELF object
             return new ElfFile
             {
-                Chunks = chunks.ToImmutableList(),
+                Chunks = chunks,
                 Header = headerChunk,
                 ProgramHeaderTable = programHeaderTableChunk,
                 SectionHeaderTable = sectionHeaderTableChunk,

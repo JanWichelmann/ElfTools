@@ -1,4 +1,4 @@
-﻿using System.Collections.Immutable;
+﻿using System.Collections.Generic;
 using System.Linq;
 using ElfTools.Chunks;
 
@@ -7,32 +7,32 @@ namespace ElfTools
     /// <summary>
     /// Represents an ELF file.
     /// </summary>
-    public record ElfFile
+    public class ElfFile
     {
         /// <summary>
         /// The chunks this ELF file is made of, in file order.
         /// </summary>
-        public ImmutableList<Chunk> Chunks { get; init; } = ImmutableList<Chunk>.Empty;
+        public List<Chunk> Chunks { get; set; }
 
         /// <summary>
         /// Reference to the ELF header chunk.
         /// </summary>
-        public HeaderChunk Header { get; init; } = new();
+        public HeaderChunk Header { get; set; } = new();
 
         /// <summary>
         /// Reference to the section header chunk.
         /// </summary>
-        public SectionHeaderTableChunk SectionHeaderTable { get; init; } = new();
+        public SectionHeaderTableChunk SectionHeaderTable { get; set; }
 
         /// <summary>
         /// Reference to the program header chunk.
         /// </summary>
-        public ProgramHeaderTableChunk? ProgramHeaderTable { get; init; } = new();
+        public ProgramHeaderTableChunk? ProgramHeaderTable { get; set; }
 
         /// <summary>
         /// Reference to the dynamic table section chunk.
         /// </summary>
-        public DynamicTableChunk? DynamicTable { get; init; }
+        public DynamicTableChunk? DynamicTable { get; set; }
 
         /// <summary>
         /// Maps the given file offset to the corresponding chunk object.

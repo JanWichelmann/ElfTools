@@ -6,12 +6,12 @@ using ElfTools.Utilities;
 
 namespace ElfTools.Chunks
 {
-    public record DynamicTableChunk : SectionChunk
+    public class DynamicTableChunk : SectionChunk
     {
         /// <summary>
         /// List of table entries.
         /// </summary>
-        public ImmutableList<DynamicTableEntry> Entries { get; init; } = ImmutableList<DynamicTableEntry>.Empty;
+        public List<DynamicTableEntry> Entries { get; set; }
 
         /// <summary>
         /// Size of an entry. This must match <see cref="SectionHeaderTableChunk.SectionHeaderTableEntry.EntrySize" />.
@@ -75,13 +75,13 @@ namespace ElfTools.Chunks
 
             return new DynamicTableChunk
             {
-                Entries = list.ToImmutableList(),
+                Entries = list,
                 EntrySize = entrySize,
                 TrailingByteCount = buffer.Length - offset
             };
         }
 
-        public record DynamicTableEntry
+        public class DynamicTableEntry
         {
             /// <summary>
             /// Byte length of an entry.
@@ -92,13 +92,13 @@ namespace ElfTools.Chunks
             /// Entry type.
             /// </summary>
             /// <remarks>(d_tag)</remarks>
-            public DynamicEntryType Type { get; init; }
+            public DynamicEntryType Type { get; set; }
 
             /// <summary>
             /// Entry value.
             /// </summary>
             /// <remarks>(d_un.d_val or d_un.d_ptr)</remarks>
-            public ulong Value { get; init; }
+            public ulong Value { get; set; }
         }
     }
 }

@@ -4,7 +4,7 @@ using ElfTools.Utilities;
 
 namespace ElfTools.Chunks
 {
-    public record HeaderChunk : Chunk
+    public class HeaderChunk : Chunk
     {
         /// <summary>
         /// Size of an ELF header.
@@ -15,121 +15,121 @@ namespace ElfTools.Chunks
         /// Magic number for identifying ELF files.
         /// </summary>
         /// <remarks>(e_ident.EI_MAGx)</remarks>
-        public byte[] MagicNumber { get; init; } = { 0x7f, 0x45, 0x4c, 0x46 };
+        public byte[] MagicNumber { get; set; } = { 0x7f, 0x45, 0x4c, 0x46 };
 
         /// <summary>
         /// The architecture (= bit size) of this binary.
         /// </summary>
         /// <remarks>(e_ident.EI_CLASS)</remarks>
-        public BinaryClass Class { get; init; }
+        public BinaryClass Class { get; set; }
 
         /// <summary>
         /// Data encoding endianness.
         /// </summary>
         /// <remarks>(e_ident.EI_DATA)</remarks>
-        public BinaryEncoding Encoding { get; init; }
+        public BinaryEncoding Encoding { get; set; }
 
         /// <summary>
         /// File version.
         /// </summary>
         /// <remarks>(e_ident.EI_VERSION)</remarks>
-        public BinaryVersion Version { get; init; }
+        public BinaryVersion Version { get; set; }
 
         /// <summary>
         /// Target OS ABI.
         /// </summary>
         /// <remarks>(e_ident.EI_OSABI)</remarks>
-        public TargetAbi TargetAbi { get; init; }
+        public TargetAbi TargetAbi { get; set; }
 
         /// <summary>
         /// Target OS ABI version.
         /// </summary>
         /// <remarks>(e_ident.EI_ABIVERSION)</remarks>
-        public byte TargetAbiVersion { get; init; }
+        public byte TargetAbiVersion { get; set; }
 
         /// <summary>
         /// Reserved bytes (padding).
         /// </summary>
         /// <remarks>(e_ident.EI_PAD)</remarks>
-        public byte[] IdentifierPadding { get; init; } = new byte[16 - 9];
+        public byte[] IdentifierPadding { get; set; } = new byte[16 - 9];
 
         /// <summary>
         /// Object file type.
         /// </summary>
         /// <remarks>(e_type)</remarks>
-        public ObjectFileType ObjectFileType { get; init; }
+        public ObjectFileType ObjectFileType { get; set; }
 
         /// <summary>
         /// Target machine architecture.
         /// </summary>
         /// <remarks>(e_machine)</remarks>
-        public MachineArchitecture TargetArchitecture { get; init; }
+        public MachineArchitecture TargetArchitecture { get; set; }
 
         /// <summary>
         /// Object file version.
         /// </summary>
         /// <remarks>(e_version)</remarks>
-        public ObjectFileVersion ObjectFileVersion { get; init; }
+        public ObjectFileVersion ObjectFileVersion { get; set; }
 
         /// <summary>
         /// Virtual address of entrypoint.
         /// </summary>
         /// <remarks>(e_entry)</remarks>
-        public ulong EntryPoint { get; init; }
+        public ulong EntryPoint { get; set; }
 
         /// <summary>
         /// File offset of the program header table. This corresponds to the file offset of the active <see cref="ProgramHeaderTableChunk" /> object.
         /// </summary>
         /// <remarks>(e_phoff)</remarks>
-        public ulong ProgramHeaderTableFileOffset { get; init; }
+        public ulong ProgramHeaderTableFileOffset { get; set; }
 
         /// <summary>
         /// File offset of the section header table. This corresponds to the file offset of the active <see cref="SectionHeaderTableChunk" /> object.
         /// </summary>
         /// <remarks>(e_shoff)</remarks>
-        public ulong SectionHeaderTableFileOffset { get; init; }
+        public ulong SectionHeaderTableFileOffset { get; set; }
 
         /// <summary>
         /// Processor-specific flags.
         /// </summary>
         /// <remarks>(e_flags)</remarks>
-        public uint ProcessorSpecificFlags { get; init; }
+        public uint ProcessorSpecificFlags { get; set; }
 
         /// <summary>
         /// Header size.
         /// </summary>
         /// <remarks>(e_ehsize)</remarks>
-        public ushort HeaderSize { get; init; }
+        public ushort HeaderSize { get; set; }
 
         /// <summary>
         /// Size of a program header table entry.
         /// </summary>
         /// <remarks>(e_phentsize)</remarks>
-        public ushort ProgramHeaderTableEntrySize { get; init; }
+        public ushort ProgramHeaderTableEntrySize { get; set; }
 
         /// <summary>
         /// Number of program header table entries.
         /// </summary>
         /// <remarks>(e_phnum)</remarks>
-        public ushort ProgramHeaderTableEntryCount { get; init; }
+        public ushort ProgramHeaderTableEntryCount { get; set; }
 
         /// <summary>
         /// Size of a section header table entry.
         /// </summary>
         /// <remarks>(e_shentsize)</remarks>
-        public ushort SectionHeaderTableEntrySize { get; init; }
+        public ushort SectionHeaderTableEntrySize { get; set; }
 
         /// <summary>
         /// Number of section header table entries.
         /// </summary>
         /// <remarks>(e_shnum)</remarks>
-        public ushort SectionHeaderTableEntryCount { get; init; }
+        public ushort SectionHeaderTableEntryCount { get; set; }
 
         /// <summary>
         /// Section index of string table.
         /// </summary>
         /// <remarks>(e_shstrndx)</remarks>
-        public ushort SectionHeaderStringTableIndex { get; init; }
+        public ushort SectionHeaderStringTableIndex { get; set; }
 
         public override int ByteLength => HeaderByteSize;
 

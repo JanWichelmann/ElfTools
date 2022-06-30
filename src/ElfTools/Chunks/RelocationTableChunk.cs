@@ -8,23 +8,23 @@ namespace ElfTools.Chunks
     /// <summary>
     /// Contains relocations without addend.
     /// </summary>
-    public record RelocationTableChunk : SectionChunk
+    public class RelocationTableChunk : SectionChunk
     {
         /// <summary>
         /// List of table entries.
         /// </summary>
-        public ImmutableList<RelocationEntry> Entries { get; init; } = ImmutableList<RelocationEntry>.Empty;
+        public List<RelocationEntry> Entries { get; set; } 
 
         /// <summary>
         /// Size of an entry. This must match <see cref="SectionHeaderTableChunk.SectionHeaderTableEntry.EntrySize" />.
         /// Entries are padded to achieve the given size.
         /// </summary>
-        public int EntrySize { get; init; }
+        public int EntrySize { get; set; }
 
         /// <summary>
         /// Number of trailing bytes after the table entries.
         /// </summary>
-        public int TrailingByteCount { get; init; }
+        public int TrailingByteCount { get; set; }
 
         public override int ByteLength => Entries.Count * EntrySize + TrailingByteCount;
 
@@ -78,13 +78,13 @@ namespace ElfTools.Chunks
 
             return new RelocationTableChunk
             {
-                Entries = list.ToImmutableList(),
+                Entries = list,
                 EntrySize = entrySize,
                 TrailingByteCount = buffer.Length - offset
             };
         }
 
-        public record RelocationEntry
+        public class RelocationEntry
         {
             /// <summary>
             /// Byte length of an entry.
@@ -94,12 +94,12 @@ namespace ElfTools.Chunks
             /// <summary>
             /// File offset or virtual address where the relocation is applied.
             /// </summary>
-            public ulong Offset { get; init; }
+            public ulong Offset { get; set; }
 
             /// <summary>
             /// Relocation info.
             /// </summary>
-            public ulong Info { get; init; }
+            public ulong Info { get; set; }
         }
     }
 }

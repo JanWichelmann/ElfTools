@@ -9,18 +9,18 @@ namespace ElfTools.Chunks
     /// <summary>
     /// Contains the section header table.
     /// </summary>
-    public record SectionHeaderTableChunk : Chunk
+    public class SectionHeaderTableChunk : Chunk
     {
         /// <summary>
         /// List of section headers.
         /// </summary>
-        public ImmutableList<SectionHeaderTableEntry> SectionHeaders { get; init; } = ImmutableList<SectionHeaderTableEntry>.Empty;
+        public List<SectionHeaderTableEntry> SectionHeaders { get; set; }
 
         /// <summary>
         /// Size of a single section header. This must match the <see cref="HeaderChunk.SectionHeaderTableEntrySize" /> value.
         /// Section headers are padded to achieve the given size.
         /// </summary>
-        public int EntrySize { get; init; }
+        public int EntrySize { get; set; }
 
         public override int ByteLength => SectionHeaders.Count * EntrySize;
 
@@ -86,12 +86,12 @@ namespace ElfTools.Chunks
 
             return new SectionHeaderTableChunk
             {
-                SectionHeaders = list.ToImmutableList(),
+                SectionHeaders = list,
                 EntrySize = entrySize
             };
         }
 
-        public record SectionHeaderTableEntry
+        public class SectionHeaderTableEntry    :ICloneable
         {
             /// <summary>
             /// Byte length of a section header.
@@ -102,61 +102,66 @@ namespace ElfTools.Chunks
             /// Index of the section name in the section name string table.
             /// </summary>
             /// <remarks>(sh_name)</remarks>
-            public uint NameStringTableOffset { get; init; }
+            public uint NameStringTableOffset { get; set; }
 
             /// <summary>
             /// Section type.
             /// </summary>
             /// <remarks>(sh_type)</remarks>
-            public SectionType Type { get; init; }
+            public SectionType Type { get; set; }
 
             /// <summary>
             /// Flags.
             /// </summary>
             /// <remarks>(sh_flags)</remarks>
-            public SectionFlags Flags { get; init; }
+            public SectionFlags Flags { get; set; }
 
             /// <summary>
             /// Virtual address at execution.
             /// </summary>
             /// <remarks>(sh_addr)</remarks>
-            public ulong VirtualAddress { get; init; }
+            public ulong VirtualAddress { get; set; }
 
             /// <summary>
             /// File offset.
             /// </summary>
             /// <remarks>(sh_off)</remarks>
-            public ulong FileOffset { get; init; }
+            public ulong FileOffset { get; set; }
 
             /// <summary>
             /// Section size in bytes.
             /// </summary>
             /// <remarks>(sh_size)</remarks>
-            public ulong Size { get; init; }
+            public ulong Size { get; set; }
 
             /// <summary>
             /// Link to another section.
             /// </summary>
             /// <remarks>(sh_link)</remarks>
-            public uint Link { get; init; }
+            public uint Link { get; set; }
 
             /// <summary>
             /// Additional section information.
             /// </summary>
             /// <remarks>(sh_info)</remarks>
-            public uint Info { get; init; }
+            public uint Info { get; set; }
 
             /// <summary>
             /// Alignment.
             /// </summary>
             /// <remarks>(sh_addralign)</remarks>
-            public ulong Alignment { get; init; }
+            public ulong Alignment { get; set; }
 
             /// <summary>
             /// Table entry size, if this section holds a table.
             /// </summary>
             /// <remarks>(sh_entsize)</remarks>
-            public ulong EntrySize { get; init; }
+            public ulong EntrySize { get; set; }
+
+            public object Clone()
+            {
+                return this.MemberwiseClone();
+            }
         }
     }
 }

@@ -7,12 +7,12 @@ namespace ElfTools.Chunks
     /// <summary>
     /// Represents a raw section which was not recognized by the ELF reader.
     /// </summary>
-    public record RawSectionChunk : SectionChunk
+    public class RawSectionChunk : SectionChunk
     {
         /// <summary>
         /// Bytes stored in this raw chunk.
         /// </summary>
-        public ImmutableArray<byte> Data { get; init; } = ImmutableArray<byte>.Empty;
+        public byte[] Data { get; set; }
 
 
         public override byte[] Bytes => Data.ToArray();
@@ -35,13 +35,12 @@ namespace ElfTools.Chunks
         public static RawSectionChunk FromBytes(ReadOnlySpan<byte> buffer)
         {
             // Copy data
-            var builder = ImmutableArray.CreateBuilder<byte>(buffer.Length);
-            foreach(var b in buffer)
-                builder.Add(b);
+            byte[] data = new byte[buffer.Length];
+            buffer.CopyTo(data);
 
             return new RawSectionChunk
             {
-                Data = builder.MoveToImmutable()
+                Data = data
             };
         }
     }
