@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using ElfTools.Chunks;
@@ -74,6 +75,98 @@ namespace ElfTools.Instrumentation
             elf.Chunks[newSectionChunkIndex] = new RawSectionChunk { Data = sectionContent };
 
             return sectionIndex;
+        }
+
+        /// <summary>
+        /// Creates a new symbol and associated string table with the given symbols.
+        /// </summary>
+        /// <param name="elf">ELF file.</param>
+        /// <param name="symbolTableSectionName">Symbol table section name.</param>
+        /// <param name="stringTableSectionName">String table section name.</param>
+        /// <param name="symbols">Symbols.</param>
+        public static void CreateSymbolTable(this ElfFile elf, string symbolTableSectionName, string stringTableSectionName, int targetSectionIndex, List<(ulong offset, string name)> symbols)
+        {
+            // Allocate extra space in section name string table
+            var stringTableSectionHeader = elf.SectionHeaderTable.SectionHeaders[elf.Header.SectionHeaderStringTableIndex];
+            elf.AllocateFileMemory((int)stringTableSectionHeader.FileOffset + (int)stringTableSectionHeader.Size, stringTableSectionName.Length + 1 + symbolTableSectionName.Length + 1);
+
+            // Allocate extra space for section headers
+            elf.AllocateFileMemory((int)elf.Header.SectionHeaderTableFileOffset + elf.SectionHeaderTable.ByteLength, 2 * elf.SectionHeaderTable.EntrySize);
+
+            // Allocate aligned space for new sections
+            int totalFileLength = elf.Chunks.Sum(c => c.ByteLength);
+            int stringTableSectionOffset = (int)(((uint)totalFileLength + 8) & ~0x7);
+            int stringTableSectionSize = symbols.Sum(s => s.name.Length + 1) + 1;
+            int symbolTableSectionOffset = (int)(((uint)stringTableSectionOffset + stringTableSectionSize + 8) & ~0x7);
+            int symbolTableSectionSize = symbols.Count * SymbolTableChunk.SymbolTableEntry.ByteLength;
+            elf.AllocateFileMemory(totalFileLength, (symbolTableSectionOffset - totalFileLength) + symbolTableSectionSize);
+
+            // Add section names to string table
+            int sectionNameStringTableIndex = elf.ExtendStringTable(elf.Header.SectionHeaderStringTableIndex, new[] { stringTableSectionName, symbolTableSectionName }, null)[0];
+
+            // Create string table section
+            int stringTableSectionIndex = elf.CreateSection(new SectionHeaderTableChunk.SectionHeaderTableEntry
+            {
+                Alignment = 1,
+                Flags = SectionFlags.None,
+                Info = 0,
+                Link = 0,
+                Size = (ulong)stringTableSectionSize,
+                Type = SectionType.StringTable,
+                EntrySize = 0,
+                FileOffset = (ulong)stringTableSectionOffset,
+                VirtualAddress = 0,
+                NameStringTableOffset = (uint)sectionNameStringTableIndex
+            }, null);
+
+            // Create symbol table section
+            int symbolTableSectionIndex = elf.CreateSection(new SectionHeaderTableChunk.SectionHeaderTableEntry
+            {
+                Alignment = 8,
+                Flags = SectionFlags.None,
+                Info = (uint)symbols.Count,
+                Link = (uint)stringTableSectionIndex,
+                Size = (ulong)symbolTableSectionSize,
+                Type = SectionType.SymbolTable,
+                EntrySize = 0x18,
+                FileOffset = (ulong)symbolTableSectionOffset,
+                VirtualAddress = 0,
+                NameStringTableOffset = (uint)(sectionNameStringTableIndex + stringTableSectionName.Length + 1)
+            }, null);
+
+            // Create string table chunk
+            int stringTableSectionChunkIndex = elf.GetChunkIndexForOffset((ulong)stringTableSectionOffset)!.Value.chunkIndex;
+            (StringTableChunk stringTableChunk, int[] offsets) = StringTableChunk.FromStrings(symbols.Select(s => s.name).ToArray());
+
+            // Place string table chunk, while ensuring that the remaining space is correctly covered by a dummy chunk (alignment)
+            var rawSectionChunk = (RawSectionChunk)elf.Chunks[stringTableSectionChunkIndex];
+            elf.Chunks[stringTableSectionChunkIndex] = stringTableChunk;
+            int remainingStringTableSectionChunkBytes = rawSectionChunk.ByteLength - stringTableChunk.ByteLength;
+            if(remainingStringTableSectionChunkBytes > 0)
+                elf.Chunks.Insert(stringTableSectionChunkIndex + 1, new DummyChunk { Data = Enumerable.Repeat<byte>(0, remainingStringTableSectionChunkBytes).ToArray() });
+
+            // Create symbol table chunk
+            int symbolTableSectionChunkIndex = elf.GetChunkIndexForOffset((ulong)symbolTableSectionOffset)!.Value.chunkIndex;
+            var symbolTableChunk = new SymbolTableChunk { Entries = new List<SymbolTableChunk.SymbolTableEntry>(), EntrySize = 0x18 };
+            for(int i = 0; i < symbols.Count; ++i)
+            {
+                symbolTableChunk.Entries.Add(new SymbolTableChunk.SymbolTableEntry
+                {
+                    Name = (uint)offsets[i],
+                    Value = symbols[i].offset,
+                    Size = 0,
+                    Info = SymbolInfo.TypeFunc | SymbolInfo.BindLocal,
+                    Visibility = SymbolVisibility.Default,
+                    Section = (ushort)targetSectionIndex
+                });
+            }
+
+            // Ensure that all allocated bytes are covered
+            rawSectionChunk = (RawSectionChunk)elf.Chunks[symbolTableSectionChunkIndex];
+            elf.Chunks[symbolTableSectionChunkIndex] = symbolTableChunk;
+            int remainingSymbolTableSectionChunkBytes = symbolTableChunk.ByteLength - rawSectionChunk.ByteLength;
+            if(remainingSymbolTableSectionChunkBytes > 0)
+                symbolTableChunk.TrailingByteCount += remainingSymbolTableSectionChunkBytes;
         }
     }
 }

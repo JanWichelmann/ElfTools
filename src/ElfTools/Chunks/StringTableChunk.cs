@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Immutable;
+using System.Linq;
 using System.Text;
 
 namespace ElfTools.Chunks
@@ -48,6 +49,29 @@ namespace ElfTools.Chunks
             {
                 Data = data
             };
+        }
+
+        /// <summary>
+        /// Greates a new chunk from the given string array.
+        /// </summary>
+        /// <param name="strings">Strings to insert into the new string table chunk.</param>
+        /// <returns>The new string table chunk and the offsets of the respective strings, in the same order as specified in <see cref="strings"/>.</returns>
+        public static (StringTableChunk chunk, int[] offsets) FromStrings(params string[] strings)
+        {
+            char[] data = new char[strings.Sum(s => s.Length + 1) + 1];
+            int[] offsets = new int[strings.Length];
+
+            int offset = 0;
+            for(var i = 0; i < strings.Length; i++)
+            {
+                var str = strings[i];
+                offsets[i] = offset;
+
+                str.CopyTo(0, data, offset, str.Length);
+                offset += str.Length + 1;
+            }
+
+            return (new StringTableChunk { Data = data }, offsets);
         }
     }
 }

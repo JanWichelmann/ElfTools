@@ -97,7 +97,7 @@ namespace ElfTools.Chunks
             /// <summary>
             /// Byte length of an entry.
             /// </summary>
-            public const int ByteLength = 4 + 1 + 2 + 2 + 8 + 8;
+            public const int ByteLength = 4 + 1 + 1 + 2 + 8 + 8;
 
             /// <summary>
             /// String table index of the symbol name.
