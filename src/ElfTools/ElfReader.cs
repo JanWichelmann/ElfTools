@@ -167,6 +167,8 @@ namespace ElfTools
                     SectionType.SymbolTable => SymbolTableChunk.FromBytes(sectionSpan, (int)sectionHeader.EntrySize),
                     SectionType.DynamicSymbols => SymbolTableChunk.FromBytes(sectionSpan, (int)sectionHeader.EntrySize),
                     SectionType.Notes => NotesChunk.FromBytes(sectionSpan),
+                    SectionType.GnuVersionDefinition => VerdefChunk.FromBytes(sectionSpan),
+                    SectionType.GnuVersionNeeds => VerneedChunk.FromBytes(sectionSpan),
                     _ => sectionSpan.Length > 0 ? RawSectionChunk.FromBytes(sectionSpan) : null
                 };
 
