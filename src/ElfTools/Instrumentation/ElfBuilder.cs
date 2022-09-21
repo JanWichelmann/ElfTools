@@ -723,11 +723,8 @@ namespace ElfTools.Instrumentation
                 throw new Exception("Could not resolve string table section index to section chunk.");
 
             // Query symbol
-            foreach(var entry in symbolTableChunk.Entries)
-            {
-                if(entry.Value == offset)
-                    return stringTableChunk.GetString(entry.Name);
-            }
+            if(symbolTableChunk.EntryLookup.TryGetValue(offset, out var symbolTableEntry))
+                return stringTableChunk.GetString(symbolTableEntry.Name);
 
             // Not found
             return null;
