@@ -694,6 +694,46 @@ namespace ElfTools.Instrumentation
         }
 
         /// <summary>
+        /// Tries to query the given offset in the ELF's symbol table.
+        /// </summary>
+        /// <param name="elf">ELF file.</param>
+        /// <param name="symbolTableSectionIndex">Symbol table section index.</param>
+        /// <param name="offset">Offset to query.</param>
+        public static string? QuerySymbolTable(this ElfFile elf, int symbolTableSectionIndex, ulong offset)
+        {
+            if(symbolTableSectionIndex < 0)
+                return null;
+
+            // Get section headers
+            var symbolTableHeader = elf.SectionHeaderTable.SectionHeaders[symbolTableSectionIndex];
+            int stringTableSectionIndex = (int)symbolTableHeader.Link;
+            if(stringTableSectionIndex < 0 || stringTableSectionIndex >= elf.SectionHeaderTable.SectionHeaders.Count)
+                return null;
+            var stringTableHeader = elf.SectionHeaderTable.SectionHeaders[stringTableSectionIndex];
+            if(stringTableHeader.Type != SectionType.StringTable)
+                return null;
+
+            // Get chunks
+            var symbolTableSectionChunkIndex = GetChunkIndexForOffset(elf, symbolTableHeader.FileOffset);
+            if(symbolTableSectionChunkIndex == null || elf.Chunks[symbolTableSectionChunkIndex.Value.chunkIndex] is not SymbolTableChunk symbolTableChunk)
+                throw new Exception("Could not resolve symbol table section index to section chunk.");
+
+            var stringTableSectionChunkIndex = GetChunkIndexForOffset(elf, stringTableHeader.FileOffset);
+            if(stringTableSectionChunkIndex == null || elf.Chunks[stringTableSectionChunkIndex.Value.chunkIndex] is not StringTableChunk stringTableChunk)
+                throw new Exception("Could not resolve string table section index to section chunk.");
+
+            // Query symbol
+            foreach(var entry in symbolTableChunk.Entries)
+            {
+                if(entry.Value == offset)
+                    return stringTableChunk.GetString(entry.Name);
+            }
+
+            // Not found
+            return null;
+        }
+
+        /// <summary>
         /// Extends the given section by the given bytes.
         /// </summary>
         /// <param name="elf">ELF file.</param>
