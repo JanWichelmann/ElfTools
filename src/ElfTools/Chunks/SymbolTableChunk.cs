@@ -17,12 +17,6 @@ namespace ElfTools.Chunks
         public List<SymbolTableEntry> Entries { get; set; }
 
         /// <summary>
-        /// Dictionary for faster lookup of entries.
-        /// Ignored on serialization.
-        /// </summary>
-        public Dictionary<ulong, SymbolTableEntry> EntryLookup { get; set; }
-
-        /// <summary>
         /// Size of an entry. This must match <see cref="SectionHeaderTableChunk.SectionHeaderTableEntry.EntrySize" />.
         /// Entries are padded to achieve the given size.
         /// </summary>
@@ -72,7 +66,6 @@ namespace ElfTools.Chunks
             int offset = 0;
 
             var list = new List<SymbolTableEntry>();
-            var lookup = new Dictionary<ulong, SymbolTableEntry>();
             while(offset <= buffer.Length - entrySize)
             {
                 var symbolTableEntry = new SymbolTableEntry
@@ -86,9 +79,6 @@ namespace ElfTools.Chunks
                 };
                 list.Add(symbolTableEntry);
 
-                if(!lookup.ContainsKey(symbolTableEntry.Value))
-                    lookup.Add(symbolTableEntry.Value, symbolTableEntry);
-
                 // Skip alignment bytes
                 for(int j = SymbolTableEntry.ByteLength; j < entrySize; ++j)
                     buffer.ReadByte(ref offset);
@@ -97,7 +87,6 @@ namespace ElfTools.Chunks
             return new SymbolTableChunk
             {
                 Entries = list,
-                EntryLookup = lookup,
                 EntrySize = entrySize,
                 TrailingByteCount = buffer.Length - offset
             };
