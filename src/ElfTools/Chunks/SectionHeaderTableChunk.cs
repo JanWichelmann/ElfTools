@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ElfTools.Enums;
 using ElfTools.Utilities;
 
@@ -91,6 +92,7 @@ namespace ElfTools.Chunks
             };
         }
 
+        [DebuggerDisplay("Offset = 0x{FileOffset.ToString(\"x\")}, VirtualAddress = 0x{VirtualAddress.ToString(\"x\")}")]
         public class SectionHeaderTableEntry    :ICloneable
         {
             /// <summary>

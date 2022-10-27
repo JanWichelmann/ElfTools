@@ -101,8 +101,8 @@ namespace ElfTools
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_RELA))
             {
                 // Find associated section header
-                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_RELA].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.FileOffset == relocationTableOffset);
+                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_RELA].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
                 var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
 
                 // Read section
@@ -117,8 +117,8 @@ namespace ElfTools
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_REL))
             {
                 // Find associated section header
-                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_REL].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.FileOffset == relocationTableOffset);
+                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_REL].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
                 var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
 
                 // Read section
@@ -133,8 +133,8 @@ namespace ElfTools
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_JMPREL))
             {
                 // Find associated section header
-                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_JMPREL].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.FileOffset == relocationTableOffset);
+                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_JMPREL].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
                 var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
 
                 // Read section

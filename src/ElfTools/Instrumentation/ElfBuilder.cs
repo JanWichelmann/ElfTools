@@ -40,8 +40,8 @@ namespace ElfTools.Instrumentation
              * 1. Insert new dummy chunk with the given size.
              * 2. Try to move displaced sections back and ensure that they are aligned - possibly by eating some dummy chunks.
              * 3. Fix segmentation table by moving/extending entries.
-             * 4. Update section table with new offsets.
-             * 5. Fix other tables which use absolute offsets.
+             * 4. Update section table with new offsets and addresses.
+             * 5. Fix other tables which use fixed addresses.
              * 6. (not necessary, but cleaner) Merge consecutive dummy chunks.
              */
 
@@ -117,7 +117,7 @@ namespace ElfTools.Instrumentation
             pos = offset + size;
             int remainingShift = size; // The number of bytes by which the chunks after pos are still shifted. We try to bring that to zero as quickly as possible
             int? newSectionHeaderTableOffset = null; // Non-null if there is a new offset
-            const int sectionHeaderTableAlignment = 16; // There does not appear to be a mandatory alignment, so we just use a constant that appears to work
+            const int sectionHeaderTableAlignment = 16; // There does not appear to be a mandatory alignment, so we just pick a constant that seems to work
             for(int i = newChunkIndex + 1; i < elf.Chunks.Count; ++i)
             {
                 // If the following chunks are not shifted anymore, we are done
@@ -377,18 +377,30 @@ namespace ElfTools.Instrumentation
             const int sectionIndexProgramHeader = -3;
             const int sectionIndexSectionHeader = -2;
             const int sectionIndexInvalid = -1;
-            List<(int sectionIndex, int baseAddress)> sortedSections = oldSections
-                .Select(sectionData => (sectionData.sectionIndex, (int)sectionData.sectionInfo.FileOffset))
-                .Append((sectionIndexElfHeader, 0))
-                .Append((sectionIndexProgramHeader, (int)elf.Header.ProgramHeaderTableFileOffset))
-                .Append((sectionIndexSectionHeader, (int)elf.Header.SectionHeaderTableFileOffset))
+            List<(int sectionIndex, int baseOffset, int? baseAddress)> sortedSections = oldSections
+                .Select(sectionData => (sectionData.sectionIndex, (int)sectionData.sectionInfo.FileOffset, (int?)sectionData.sectionInfo.VirtualAddress))
+                .Append((sectionIndexElfHeader,
+                        0,
+                        (int?)elf.ProgramHeaderTable.ProgramHeaders
+                            .FirstOrDefault(ph => ph.FileOffset == 0)?.VirtualMemoryAddress)
+                )
+                .Append((sectionIndexProgramHeader,
+                        (int)elf.Header.ProgramHeaderTableFileOffset,
+                        (int?)elf.ProgramHeaderTable.ProgramHeaders
+                            .FirstOrDefault(ph => ph.FileOffset <= elf.Header.ProgramHeaderTableFileOffset && elf.Header.ProgramHeaderTableFileOffset < ph.FileOffset + ph.FileSize)?.VirtualMemoryAddress)
+                )
+                .Append((sectionIndexSectionHeader,
+                        (int)elf.Header.SectionHeaderTableFileOffset,
+                        (int?)elf.ProgramHeaderTable.ProgramHeaders
+                            .FirstOrDefault(ph => ph.FileOffset <= elf.Header.SectionHeaderTableFileOffset && elf.Header.SectionHeaderTableFileOffset < ph.FileOffset + ph.FileSize)?.VirtualMemoryAddress)
+                )
                 .OrderBy(s => s.Item2)
                 .ToList();
 
             for(int i = 0; i < elf.ProgramHeaderTable.ProgramHeaders.Count; ++i)
             {
                 var segmentData = elf.ProgramHeaderTable.ProgramHeaders[i];
-                int segmentStartAddress = (int)segmentData.FileOffset;
+                int segmentStartAddress = (int)segmentData.VirtualMemoryAddress;
                 int segmentEndAddress = segmentStartAddress + (int)segmentData.FileSize;
 
                 // Identify first and last "section" in the original segment
@@ -396,16 +408,15 @@ namespace ElfTools.Instrumentation
                 int lastSectionIndex = sectionIndexInvalid;
 
                 // Iterate sections
-                foreach(var sectionData in sortedSections)
+                foreach(var (sectionIndex, _, sectionStartAddress) in sortedSections)
                 {
-                    int sectionStartAddress = sectionData.baseAddress;
-
                     // Check whether section starts somewhere in the segment
-                    if(segmentStartAddress <= sectionStartAddress && sectionStartAddress < segmentEndAddress)
+                    // Skip sections that have no address, except for the ELF header
+                    if((sectionStartAddress != 0 || sectionIndex == sectionIndexElfHeader) && segmentStartAddress <= sectionStartAddress && sectionStartAddress < segmentEndAddress)
                     {
                         if(firstSectionIndex == sectionIndexInvalid)
-                            firstSectionIndex = sectionData.sectionIndex;
-                        lastSectionIndex = sectionData.sectionIndex;
+                            firstSectionIndex = sectionIndex;
+                        lastSectionIndex = sectionIndex;
                     }
                 }
 
@@ -493,6 +504,7 @@ namespace ElfTools.Instrumentation
                 elf.ProgramHeaderTable.ProgramHeaders[i] = segmentData;
             }
 
+
             /* Update ELF header, if necessary */
 
             if(newSectionHeaderTableOffset != null)
@@ -503,6 +515,7 @@ namespace ElfTools.Instrumentation
 
             /* Update section headers */
 
+            Dictionary<int, int> newSectionAddresses = new();
             foreach(var movedSection in movedSections)
             {
                 if(movedSection.Key < 0 || elf.SectionHeaderTable.SectionHeaders.Count <= movedSection.Key)
@@ -512,35 +525,42 @@ namespace ElfTools.Instrumentation
                 sectionHeader.FileOffset = (ulong)((int)sectionHeader.FileOffset + movedSection.Value.delta);
 
                 // Only touch address if this section ends up in at least one non-LOAD segment
-                if(elf.ProgramHeaderTable.ProgramHeaders.Any(ph => ph.Type != SegmentType.Load && ph.FileOffset <= sectionHeader.FileOffset && sectionHeader.FileOffset < ph.FileOffset + ph.FileSize))
-                    sectionHeader.VirtualAddress = (ulong)((int)sectionHeader.VirtualAddress + movedSection.Value.delta);
+                if(sectionHeader.VirtualAddress != 0 && elf.ProgramHeaderTable.ProgramHeaders.Any(ph => ph.FileOffset == 0 || (ph.Type != SegmentType.Load && ph.FileOffset <= sectionHeader.FileOffset && sectionHeader.FileOffset < ph.FileOffset + ph.FileSize)))
+                {
+                    int newAddress = (int)sectionHeader.VirtualAddress + movedSection.Value.delta;
+                    sectionHeader.VirtualAddress = (ulong)newAddress;
+                    newSectionAddresses.Add(movedSection.Key, newAddress);
+                }
             }
+
 
             /* Fix tables */
 
             // We first compute a mapping of
-            //   old section offset => (section size, new section offset)
+            //   old section address => (section size, new section address)
             // for easier mapping
-            Dictionary<int, (int size, int newOffset)> sectionAddressMoveMapping = oldSections.ToDictionary(s => (int)s.sectionInfo.FileOffset, s =>
-            {
-                if(movedSections.TryGetValue(s.sectionIndex, out var movedSection))
-                    return ((int)s.sectionInfo.Size, movedSection.newOffset);
+            Dictionary<int, (int size, int newAddress)> sectionAddressMoveMapping = oldSections
+                .Where(s => s.sectionInfo.VirtualAddress != 0)
+                .ToDictionary(s => (int)s.sectionInfo.VirtualAddress, s =>
+                {
+                    if(newSectionAddresses.TryGetValue(s.sectionIndex, out var newSectionAddress))
+                        return ((int)s.sectionInfo.Size, newSectionAddress);
 
-                return ((int)s.sectionInfo.Size, (int)s.sectionInfo.FileOffset);
-            });
+                    return ((int)s.sectionInfo.Size, (int)s.sectionInfo.VirtualAddress);
+                });
 
-            int GetMovedSectionBaseOffset(int oldBaseOffset)
+            int GetMovedSectionBaseAddress(int oldBaseAddress)
             {
                 // Find matching section
-                foreach(var (oldSectionOffset, (sectionSize, newSectionOffset)) in sectionAddressMoveMapping)
+                foreach(var (oldSectionAddress, (sectionSize, newSectionAddress)) in sectionAddressMoveMapping)
                 {
-                    // If this section matches, adjust the input offset accordingly
-                    if(oldSectionOffset <= oldBaseOffset && oldBaseOffset < (oldSectionOffset + sectionSize))
-                        return oldBaseOffset + newSectionOffset - oldSectionOffset; // Add offset delta
+                    // If this section matches, adjust the input address accordingly
+                    if(oldSectionAddress <= oldBaseAddress && oldBaseAddress < (oldSectionAddress + sectionSize))
+                        return oldBaseAddress + newSectionAddress - oldSectionAddress; // Add address delta
                 }
 
                 // Nothing has changed
-                return oldBaseOffset;
+                return oldBaseAddress;
             }
 
             // Fix sections mentioned in the dynamic table
@@ -551,7 +571,7 @@ namespace ElfTools.Instrumentation
                 {
                     switch(entry.Type)
                     {
-                        // Adjust section offsets
+                        // Adjust section addresses
                         case DynamicEntryType.DT_GNU_HASH:
                         case DynamicEntryType.DT_STRTAB:
                         case DynamicEntryType.DT_SYMTAB:
@@ -562,11 +582,9 @@ namespace ElfTools.Instrumentation
                         case DynamicEntryType.DT_VERSYM:
                         case DynamicEntryType.DT_VERDEF:
                         {
-                            entry.Value = (ulong)GetMovedSectionBaseOffset((int)entry.Value);
+                            entry.Value = (ulong)GetMovedSectionBaseAddress((int)entry.Value);
                             break;
                         }
-
-                        // TODO Adjust segment offsets
                     }
                 }
             }

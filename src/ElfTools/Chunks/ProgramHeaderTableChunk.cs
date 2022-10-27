@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using ElfTools.Enums;
 using ElfTools.Utilities;
 
@@ -84,6 +85,7 @@ namespace ElfTools.Chunks
             };
         }
 
+        [DebuggerDisplay("Offset = 0x{FileOffset.ToString(\"x\")}, VirtualMemoryAddress = 0x{VirtualMemoryAddress.ToString(\"x\")}")]
         public class ProgramHeaderTableEntry
         {
             /// <summary>
