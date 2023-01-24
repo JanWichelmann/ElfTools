@@ -100,49 +100,91 @@ namespace ElfTools
             // Read relocations
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_RELA))
             {
-                // Find associated section header
-                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_RELA].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
-                var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
+                // Find associated section header(s) (there may be multiple in a row - we just pass them all, and decide based on DT_RELASZ)
+                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_RELA].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableOffset);
+
+                List<SectionHeaderTableChunk.SectionHeaderTableEntry> adjacentSectionHeaders = new();
+                for(int s = sectionHeaderIndex; s < sectionHeaderTableChunk.SectionHeaders.Count; ++s)
+                {
+                    if(sectionHeaderTableChunk.SectionHeaders[s].Type is SectionType.RelocationEntriesWithAddends or SectionType.RelocationEntriesWithoutAddends)
+                        adjacentSectionHeaders.Add(sectionHeaderTableChunk.SectionHeaders[s]);
+                    else
+                        break;
+                }
 
                 // Read section
-                var chunk = ReadRelocationChunk(DynamicEntryType.DT_RELA, dynamicTableEntries, sectionHeader, elfSpan);
-                if(chunk != null)
+                var relocationChunks = ReadRelocationChunk(DynamicEntryType.DT_RELA, dynamicTableEntries, adjacentSectionHeaders, elfSpan);
+                for(var i = 0; i < relocationChunks.Count; i++)
                 {
-                    chunkList.Add(sectionHeader.FileOffset, (sectionHeaderIndex, chunk));
-                    parsedSectionIds.Add(sectionHeaderIndex);
+                    var chunk = relocationChunks[i];
+
+                    // Sum relocation sections may be referenced multiple times
+                    if(!chunkList.ContainsKey(adjacentSectionHeaders[i].FileOffset))
+                    {
+                        chunkList.Add(adjacentSectionHeaders[i].FileOffset, (sectionHeaderIndex + i, chunk));
+                        parsedSectionIds.Add(sectionHeaderIndex + i);
+                    }
                 }
             }
 
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_REL))
             {
-                // Find associated section header
-                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_REL].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
-                var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
+                // Find associated section header(s) (there may be multiple in a row - we just pass them all, and decide based on DT_RELSZ)
+                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_REL].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableOffset);
+
+                List<SectionHeaderTableChunk.SectionHeaderTableEntry> adjacentSectionHeaders = new();
+                for(int s = sectionHeaderIndex; s < sectionHeaderTableChunk.SectionHeaders.Count; ++s)
+                {
+                    if(sectionHeaderTableChunk.SectionHeaders[s].Type is SectionType.RelocationEntriesWithAddends or SectionType.RelocationEntriesWithoutAddends)
+                        adjacentSectionHeaders.Add(sectionHeaderTableChunk.SectionHeaders[s]);
+                    else
+                        break;
+                }
 
                 // Read section
-                var chunk = ReadRelocationChunk(DynamicEntryType.DT_REL, dynamicTableEntries, sectionHeader, elfSpan);
-                if(chunk != null)
+                var relocationChunks = ReadRelocationChunk(DynamicEntryType.DT_REL, dynamicTableEntries, adjacentSectionHeaders, elfSpan);
+                for(var i = 0; i < relocationChunks.Count; i++)
                 {
-                    chunkList.Add(sectionHeader.FileOffset, (sectionHeaderIndex, chunk));
-                    parsedSectionIds.Add(sectionHeaderIndex);
+                    var chunk = relocationChunks[i];
+
+                    // Sum relocation sections may be referenced multiple times
+                    if(!chunkList.ContainsKey(adjacentSectionHeaders[i].FileOffset))
+                    {
+                        chunkList.Add(adjacentSectionHeaders[i].FileOffset, (sectionHeaderIndex + i, chunk));
+                        parsedSectionIds.Add(sectionHeaderIndex + i);
+                    }
                 }
             }
 
             if(dynamicTableEntries.ContainsKey(DynamicEntryType.DT_JMPREL))
             {
-                // Find associated section header
-                ulong relocationTableAddress = dynamicTableEntries[DynamicEntryType.DT_JMPREL].First();
-                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableAddress);
-                var sectionHeader = sectionHeaderTableChunk.SectionHeaders[sectionHeaderIndex];
+                // Find associated section header(s) (there may be multiple in a row - we just pass them all, and decide based on DT_JMPRELSZ)
+                ulong relocationTableOffset = dynamicTableEntries[DynamicEntryType.DT_JMPREL].First();
+                var sectionHeaderIndex = sectionHeaderTableChunk.SectionHeaders.FindIndex(e => e.VirtualAddress == relocationTableOffset);
+
+                List<SectionHeaderTableChunk.SectionHeaderTableEntry> adjacentSectionHeaders = new();
+                for(int s = sectionHeaderIndex; s < sectionHeaderTableChunk.SectionHeaders.Count; ++s)
+                {
+                    if(sectionHeaderTableChunk.SectionHeaders[s].Type is SectionType.RelocationEntriesWithAddends or SectionType.RelocationEntriesWithoutAddends)
+                        adjacentSectionHeaders.Add(sectionHeaderTableChunk.SectionHeaders[s]);
+                    else
+                        break;
+                }
 
                 // Read section
-                var chunk = ReadRelocationChunk(DynamicEntryType.DT_JMPREL, dynamicTableEntries, sectionHeader, elfSpan);
-                if(chunk != null)
+                var relocationChunks = ReadRelocationChunk(DynamicEntryType.DT_JMPREL, dynamicTableEntries, adjacentSectionHeaders, elfSpan);
+                for(var i = 0; i < relocationChunks.Count; i++)
                 {
-                    chunkList.Add(sectionHeader.FileOffset, (sectionHeaderIndex, chunk));
-                    parsedSectionIds.Add(sectionHeaderIndex);
+                    var chunk = relocationChunks[i];
+
+                    // Sum relocation sections may be referenced multiple times
+                    if(!chunkList.ContainsKey(adjacentSectionHeaders[i].FileOffset))
+                    {
+                        chunkList.Add(adjacentSectionHeaders[i].FileOffset, (sectionHeaderIndex + i, chunk));
+                        parsedSectionIds.Add(sectionHeaderIndex + i);
+                    }
                 }
             }
 
@@ -224,11 +266,13 @@ namespace ElfTools
         /// </summary>
         /// <param name="relocationTableEntryTypeBase">Type of the dynamic table address entry for the given relocation table.</param>
         /// <param name="dynamicTableEntries">Parsed dynamic table.</param>
-        /// <param name="sectionHeader">Section header of the relocation table.</param>
+        /// <param name="adjacentSectionHeaders">List of adjacent section headers of the relocation table(s).</param>
         /// <param name="elfSpan">Raw ELF data.</param>
         /// <returns></returns>
-        private static Chunk? ReadRelocationChunk(DynamicEntryType relocationTableEntryTypeBase, Dictionary<DynamicEntryType, List<ulong>> dynamicTableEntries, SectionHeaderTableChunk.SectionHeaderTableEntry sectionHeader, Span<byte> elfSpan)
+        private static List<Chunk> ReadRelocationChunk(DynamicEntryType relocationTableEntryTypeBase, Dictionary<DynamicEntryType, List<ulong>> dynamicTableEntries, List<SectionHeaderTableChunk.SectionHeaderTableEntry> adjacentSectionHeaders, Span<byte> elfSpan)
         {
+            var chunks = new List<Chunk>();
+
             // Identify effective relocation entry type (relevant for PLT relocations, as those share metadata with other REL/RELA tables)
             DynamicEntryType relocationTableEntryType = relocationTableEntryTypeBase;
             if(relocationTableEntryTypeBase == DynamicEntryType.DT_JMPREL)
@@ -236,7 +280,7 @@ namespace ElfTools
                 if(dynamicTableEntries.TryGetValue(DynamicEntryType.DT_PLTREL, out var pltRelocationTypes))
                     relocationTableEntryType = (DynamicEntryType)pltRelocationTypes.First();
                 else
-                    return null; // We could guess, but that would be unsafe. Rather not parse the chunk at all
+                    return chunks; // We could guess, but that would be unsafe. Rather not parse the chunk at all
             }
 
             // Determine corresponding metadata entry types
@@ -256,22 +300,32 @@ namespace ElfTools
             };
 
             // Compute entry size
-            ulong relocationTableEntrySize = sectionHeader.EntrySize;
+            ulong relocationTableEntrySize = adjacentSectionHeaders.First().EntrySize;
             if(relocationTableEntrySizeType != null && dynamicTableEntries.TryGetValue(relocationTableEntrySizeType.Value, out var relocationTableEntrySizes))
                 relocationTableEntrySize = relocationTableEntrySizes.First();
 
             // Compute total table size
-            ulong relocationTableSize = sectionHeader.Size;
+            long relocationTableSize = (long)adjacentSectionHeaders.First().Size;
             if(relocationTableSizeType != null && dynamicTableEntries.TryGetValue(relocationTableSizeType.Value, out var relocationTableSizes))
-                relocationTableSize = relocationTableSizes.First();
+                relocationTableSize = (long)relocationTableSizes.First();
 
             // TODO check what RELACOUNT does
 
-            // Read section
-            var sectionSpan = elfSpan.Slice((int)sectionHeader.FileOffset, (int)sectionHeader.Size);
-            if(relocationTableEntryType == DynamicEntryType.DT_RELA)
-                return RelocationAddendTableChunk.FromBytes(sectionSpan, (int)relocationTableEntrySize, (int)(relocationTableSize / relocationTableEntrySize));
-            return RelocationTableChunk.FromBytes(sectionSpan, (int)relocationTableEntrySize, (int)(relocationTableSize / relocationTableEntrySize));
+            // Read section(s)
+            foreach(var sectionHeader in adjacentSectionHeaders)
+            {
+                var sectionSpan = elfSpan.Slice((int)sectionHeader.FileOffset, (int)sectionHeader.Size);
+                if(relocationTableEntryType == DynamicEntryType.DT_RELA)
+                    chunks.Add(RelocationAddendTableChunk.FromBytes(sectionSpan, (int)relocationTableEntrySize, (int)(sectionHeader.Size / relocationTableEntrySize)));
+                else
+                    chunks.Add(RelocationTableChunk.FromBytes(sectionSpan, (int)relocationTableEntrySize, (int)(sectionHeader.Size / relocationTableEntrySize)));
+
+                relocationTableSize -= (long)sectionHeader.Size;
+                if(relocationTableSize <= 0)
+                    break;
+            }
+
+            return chunks;
         }
     }
 }
